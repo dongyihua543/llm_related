@@ -22,18 +22,19 @@ from train import VLMConfig, VLM
 
 def find_assistant_tokens(tokenizer, target):
     result = []
-    start_index =0
+    start_index = 0
     end_index = 0
-    while start_index <= len(target)-1:
-        if target[start_index]!=tokenizer('assistant')['input_ids'][0]:
-            start_index+=1
-            end_index+=1
+    while start_index <= len(target) - 1:
+        if target[start_index] != tokenizer('assistant')['input_ids'][0]:
+            start_index += 1
+            end_index += 1
         else:
-            end_index+=1
-            if target[end_index]==tokenizer('<|im_end|>')['input_ids'][0]:
-                result.append((start_index+1,end_index+1))
-                start_index=end_index+1
+            end_index += 1
+            if target[end_index] == tokenizer('<|im_end|>')['input_ids'][0]:
+                result.append((start_index + 1, end_index + 1))
+                start_index = end_index + 1
     return result
+
 
 class SftMultiImageDataset(Dataset):
     def __init__(self, images_path, data_path, tokenizer, processor, config):
@@ -43,27 +44,26 @@ class SftMultiImageDataset(Dataset):
         self.tokenizer = tokenizer
         self.processor = processor
         self.config = config
-        
+
         self.datas = pd.read_parquet(self.data_path)
-        
-            
+
     def __len__(self):
         return len(self.datas)
-    
+
     def __getitem__(self, index):
         sample = self.datas.iloc[index]
         try:
             images = sample['images']
             image_paths = [image_info['path'] for image_info in images]
             conversations = list(sample['conversation'])
-            messages = [{"role":"system", "content":'You are a helpful assistant.'}]
+            messages = [{"role": "system", "content": 'You are a helpful assistant.'}]
             messages.extend(conversations)
             # text = tokenizer.apply_chat_template(messages, \
             #     tokenize=False, \
             #     ).replace('<image>', '<|vision_start|>' + '<|image_pad|>'*self.config.image_pad_num + '<|vision_end|>')
             text = tokenizer.apply_chat_template(messages, \
-                tokenize=False, \
-                ).replace('<image>', '<|image_pad|>'*self.config.image_pad_num + '\n')
+                                                 tokenize=False, \
+                                                 ).replace('<image>', '<|image_pad|>' * self.config.image_pad_num + '\n')
             input_ids = tokenizer(text)['input_ids']
             indexs = find_assistant_tokens(tokenizer, input_ids)
             labels = len(input_ids) * [tokenizer.pad_token_id]
@@ -71,25 +71,25 @@ class SftMultiImageDataset(Dataset):
                 labels[index[0]:index[1]] = input_ids[index[0]:index[1]]
             input_ids = input_ids[:-1]
             labels = labels[1:]
-        
+
             images = []
             for image_name in image_paths:
                 image = Image.open(os.path.join(self.images_path, image_name)).convert('RGB')
                 images.append(image)
-            
+
             pixel_values = self.processor(text=None, images=images)['pixel_values']
-     
-       
+
+
         except:
-            
+
             default_image = Image.new('RGB', (224, 224), color='white')
             pixel_values = self.processor(text=None, images=default_image)['pixel_values']
             # q_text = self.tokenizer.apply_chat_template([{"role":"system", "content":'You are a helpful assistant.'}, {"role":"user", "content":"图片内容是什么\n<image>"}], \
             #     tokenize=False, \
             #     add_generation_prompt=True).replace('<image>', '<|vision_start|>' + '<|image_pad|>'*self.config.image_pad_num + '<|vision_end|>')
-            q_text = self.tokenizer.apply_chat_template([{"role":"system", "content":'You are a helpful assistant.'}, {"role":"user", "content":"图片内容是什么\n<image>"}], \
-                tokenize=False, \
-                add_generation_prompt=True).replace('<image>', '<|image_pad|>'*self.config.image_pad_num + '\n')
+            q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'}, {"role": "user", "content": "图片内容是什么\n<image>"}], \
+                                                        tokenize=False, \
+                                                        add_generation_prompt=True).replace('<image>', '<|image_pad|>' * self.config.image_pad_num + '\n')
             a_text = '图片内容为空' + self.tokenizer.eos_token
             q_input_ids = self.tokenizer(q_text)['input_ids']
             a_input_ids = self.tokenizer(a_text)['input_ids']
@@ -97,17 +97,18 @@ class SftMultiImageDataset(Dataset):
             labels = [tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
             input_ids = input_ids[:-1]
             labels = labels[1:]
-        
+
         return {
             'input_ids': input_ids,
             'labels': labels,
             'pixel_values': pixel_values
-        }   
+        }
+
 
 class MyDataCollator:
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
-    
+
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         max_len = max(len(feature['input_ids']) for feature in features)
         input_ids = []
@@ -117,7 +118,7 @@ class MyDataCollator:
             input_ids.append(feature['input_ids'] + [self.tokenizer.pad_token_id] * (max_len - len(feature['input_ids'])))
             labels.append(feature['labels'] + [self.tokenizer.pad_token_id] * (max_len - len(feature['labels'])))
             pixel_values.append(feature['pixel_values'])
-            
+
         return {'input_ids': torch.tensor(input_ids, dtype=torch.long),
                 'labels': torch.tensor(labels, dtype=torch.long),
                 'pixel_values': torch.cat(pixel_values, dim=0)}
@@ -130,17 +131,17 @@ if __name__ == '__main__':
     AutoConfig.register("vlm_model", VLMConfig)
     AutoModelForCausalLM.register(VLMConfig, VLM)
     model = AutoModelForCausalLM.from_pretrained('/home/user/wyf/train_multimodal_from_scratch/save/sft')
-    
+
     for name, param in model.named_parameters():
         if 'linear' in name or 'vision_model':
             param.requires_grad = False
         if 'llm_model' in name:
             param.requires_grad = True
-    print(f'模型参数量为：{sum(p.numel() for p in model.parameters())}') 
-    print(f'模型可训练参数量为：{sum(p.numel() for p in model.parameters() if p.requires_grad)}') 
+    print(f'模型参数量为：{sum(p.numel() for p in model.parameters())}')
+    print(f'模型可训练参数量为：{sum(p.numel() for p in model.parameters() if p.requires_grad)}')
     images_path = '/home/user/wyf/train_multimodal_from_scratch/dataset'
     data_path = '/home/user/wyf/train_multimodal_from_scratch/dataset/train-00000-of-00001.parquet'
-    output_dir = 'save/sft_multi_image_v2' 
+    output_dir = 'save/sft_multi_image_v2'
     args = TrainingArguments(
         output_dir=output_dir,
         do_train=True,
@@ -160,9 +161,9 @@ if __name__ == '__main__':
         model=model,
         args=args,
         train_dataset=SftMultiImageDataset(images_path, data_path, tokenizer, processor, config),
-        data_collator=MyDataCollator(tokenizer)  
+        data_collator=MyDataCollator(tokenizer)
     )
-    
+
     trainer.train(resume_from_checkpoint=False)
     trainer.save_model('save/sft_multi_image_v2')
     trainer.save_state()
