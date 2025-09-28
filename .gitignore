@@ -2,3 +2,4 @@
 __pycache__/
 premodels/
 predatasets/
+train_multimodal_from_scratch/save/
