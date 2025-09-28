@@ -106,13 +106,13 @@ class MyDataset(Dataset):
             q_input_ids = self.tokenizer(q_text)['input_ids']
             a_input_ids = self.tokenizer(a_text)['input_ids']
             input_ids = q_input_ids + a_input_ids
-            labels = [tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
+            labels = [self.tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
             input_ids = input_ids[:-1]
             labels = labels[1:]
 
             image = Image.open(os.path.join(self.images_path, image_name)).convert("RGB")
             pixel_values = self.processor(text=None, images=image)['pixel_values']
-        except:
+        except BaseException as err:
             default_image = Image.new('RGB', (224, 224), color='white')
             pixel_values = self.processor(text=None, images=default_image)['pixel_values']
             q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'}, {"role": "user", "content": "图片内容是什么\n<image>"}],
@@ -122,7 +122,7 @@ class MyDataset(Dataset):
             q_input_ids = self.tokenizer(q_text)['input_ids']
             a_input_ids = self.tokenizer(a_text)['input_ids']
             input_ids = q_input_ids + a_input_ids
-            labels = [tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
+            labels = [self.tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
             input_ids = input_ids[:-1]
             labels = labels[1:]
 
