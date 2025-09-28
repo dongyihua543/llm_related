@@ -14,6 +14,7 @@ pip install huggingface-hub==0.20.1
 
 # 模型
 # snapshot_download(repo_id="Qwen/Qwen2.5-0.5B-Instruct", local_dir="../premodels/Qwen2.5-0.5B-Instruct")
-snapshot_download(repo_id="google/siglip-base-patch16-224", local_dir="../premodels/siglip-base-patch16-224")
+# snapshot_download(repo_id="google/siglip-base-patch16-224", local_dir="../premodels/siglip-base-patch16-224")
 
 # 数据
+snapshot_download(repo_id="liuhaotian/LLaVA-CC3M-Pretrain-595K", repo_type="dataset", local_dir="../predatasets/LLaVA-CC3M-Pretrain-595K")
