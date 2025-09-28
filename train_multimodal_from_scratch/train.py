@@ -19,8 +19,8 @@ from typing import List, Dict, Any
 class VLMConfig(PretrainedConfig):
     model_type = "vlm_model"
 
-    def __init__(self, llm_model_path='/home/user/Downloads/Qwen2.5-0.5B-Instruct',
-                 vision_model_path='/home/user/Downloads/siglip-so400m-patch14-384',
+    def __init__(self, llm_model_path='../premodels/Qwen2.5-0.5B-Instruct',
+                 vision_model_path='../premodels/siglip-base-patch16-224',
                  freeze_vision_model=True,
                  image_pad_num=49,
                  **kwargs):
@@ -99,8 +99,8 @@ class MyDataset(Dataset):
         try:
             image_name = sample['image']
             conversations = sample['conversations']
-            q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'}, {"role": "user", "content": conversations[0]['value']}], \
-                                                        tokenize=False, \
+            q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'}, {"role": "user", "content": conversations[0]['value']}],
+                                                        tokenize=False,
                                                         add_generation_prompt=True).replace('<image>', '<|image_pad|>' * self.config.image_pad_num)
             a_text = conversations[1]['value'] + self.tokenizer.eos_token
             q_input_ids = self.tokenizer(q_text)['input_ids']
@@ -115,8 +115,8 @@ class MyDataset(Dataset):
         except:
             default_image = Image.new('RGB', (224, 224), color='white')
             pixel_values = self.processor(text=None, images=default_image)['pixel_values']
-            q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'}, {"role": "user", "content": "图片内容是什么\n<image>"}], \
-                                                        tokenize=False, \
+            q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'}, {"role": "user", "content": "图片内容是什么\n<image>"}],
+                                                        tokenize=False,
                                                         add_generation_prompt=True).replace('<image>', '<|image_pad|>' * self.config.image_pad_num)
             a_text = '图片内容为空' + self.tokenizer.eos_token
             q_input_ids = self.tokenizer(q_text)['input_ids']
@@ -153,12 +153,12 @@ class MyDataCollator:
 
 
 if __name__ == '__main__':
-    config = VLMConfig(vision_model_path='/home/user/wyf/siglip-base-patch16-224', image_pad_num=49)
+    config = VLMConfig(vision_model_path='../premodels/siglip-base-patch16-224', image_pad_num=49)
     model = VLM(config).cuda()
     print(model)
     print(f'模型参数量为：{sum(p.numel() for p in model.parameters() if p.requires_grad)}')
-    images_path = './dataset/LLaVA-CC3M-Pretrain-595K/images'
-    data_path = './dataset/Chinese-LLaVA-Vision-Instructions/LLaVA-CC3M-Pretrain-595K/chat-translated.json'
+    images_path = '../predatasets/LLaVA-CC3M-Pretrain-595K/images'
+    data_path = '../predatasets/Chinese-LLaVA-Vision-Instructions/LLaVA-CC3M-Pretrain-595K/chat-translated.json'
     tokenizer = AutoTokenizer.from_pretrained(config.llm_model_path)
     processor = AutoProcessor.from_pretrained(config.vision_model_path)
     output_dir = 'save/pretrain'
