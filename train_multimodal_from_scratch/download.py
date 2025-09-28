@@ -17,4 +17,5 @@ pip install huggingface-hub==0.20.1
 # snapshot_download(repo_id="google/siglip-base-patch16-224", local_dir="../premodels/siglip-base-patch16-224")
 
 # 数据
-snapshot_download(repo_id="liuhaotian/LLaVA-CC3M-Pretrain-595K", repo_type="dataset", local_dir="../predatasets/LLaVA-CC3M-Pretrain-595K")
+# snapshot_download(repo_id="liuhaotian/LLaVA-CC3M-Pretrain-595K", repo_type="dataset", local_dir="../predatasets/LLaVA-CC3M-Pretrain-595K")
+snapshot_download(repo_id="LinkSoul/Chinese-LLaVA-Vision-Instructions", repo_type="dataset", local_dir="../predatasets/Chinese-LLaVA-Vision-Instructions")
